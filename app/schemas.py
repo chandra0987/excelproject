@@ -11,7 +11,7 @@ class UserRegister(BaseModel):
 
 
 class UserLogin(BaseModel):
-    username: str
+    email: str
     password: str
 
 
@@ -22,7 +22,7 @@ class TokenResponse(BaseModel):
 
 
 class UserResponse(BaseModel):
-    id: int
+    id: str
     username: str
     email: str
     is_active: bool

@@ -5,10 +5,14 @@ class Settings:
     PROJECT_NAME: str = "Excel Project Backend"
     VERSION: str = "1.0.0"
 
-    # Database
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        "sqlite:///./excel_project.db",
+    # MongoDB
+    MONGODB_URL: str = os.getenv(
+        "MONGODB_URL",
+        "mongodb://localhost:27017",
+    )
+    MONGODB_DB_NAME: str = os.getenv(
+        "MONGODB_DB_NAME",
+        "excel_project",
     )
 
     # JWT

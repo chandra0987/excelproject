@@ -1,12 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, status
 
 from app.auth import create_access_token, hash_password, verify_password
-from app.database import get_db
-from app.models import User
+from app.database import get_users_collection
+from app.models import UserModel
 from app.schemas import (
-    MessageResponse,
     TokenResponse,
     UserLogin,
     UserRegister,
@@ -22,32 +19,29 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user",
 )
-def register(payload: UserRegister, db: Session = Depends(get_db)):
+async def register(payload: UserRegister):
     """Create a new user account with a hashed password."""
+    users = get_users_collection()
+
     # Check if username or email already exists
-    existing_user = (
-        db.query(User)
-        .filter(
-            or_(User.username == payload.username, User.email == payload.email)
-        )
-        .first()
+    existing = await users.find_one(
+        {"$or": [{"username": payload.username}, {"email": payload.email}]}
     )
-    if existing_user:
-        field = "username" if existing_user.username == payload.username else "email"
+    if existing:
+        field = "username" if existing["username"] == payload.username else "email"
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"A user with this {field} already exists.",
         )
 
-    user = User(
+    user_doc = UserModel(
         username=payload.username,
         email=payload.email,
         hashed_password=hash_password(payload.password),
     )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
+    result = await users.insert_one(user_doc.to_mongo())
+    user_doc.id = str(result.inserted_id)
+    return user_doc
 
 
 @router.post(
@@ -55,13 +49,24 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
     response_model=TokenResponse,
     summary="Authenticate a user and return a JWT token",
 )
-def login(payload: UserLogin, db: Session = Depends(get_db)):
-    """Authenticate with username and password, returns a bearer JWT token."""
-    user = db.query(User).filter(User.username == payload.username).first()
-    if not user or not verify_password(payload.password, user.hashed_password):
+async def login(payload: UserLogin):
+    """Authenticate with email and password, returns a bearer JWT token."""
+    users = get_users_collection()
+
+    user_data = await users.find_one({"email": payload.email})
+    if not user_data:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password.",
+            detail="Invalid email or password.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = UserModel.from_mongo(user_data)
+
+    if not verify_password(payload.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -71,5 +76,7 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
             detail="Account is deactivated.",
         )
 
-    access_token = create_access_token(data={"sub": str(user.id), "username": user.username})
+    access_token = create_access_token(
+        data={"sub": user.id, "username": user.username}
+    )
     return TokenResponse(access_token=access_token)

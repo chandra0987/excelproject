@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Excel Project - Auth</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: rgba(30, 41, 59, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 1.25rem;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      transition: transform 0.2s ease;
+    }
+
+    /* ── Header ── */
+    .header { text-align: center; margin-bottom: 2rem; }
+    .header .logo {
+      width: 56px; height: 56px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      color: #fff;
+      margin-bottom: 1rem;
+      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+    }
+    .header h1 { font-size: 1.5rem; font-weight: 700; color: #f1f5f9; }
+    .header p { font-size: 0.875rem; color: #94a3b8; margin-top: 0.25rem; }
+    .header .sub { font-size: 0.75rem; color: #64748b; margin-top: 0.15rem; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 0.25rem;
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 0.75rem;
+      padding: 0.25rem;
+      margin-bottom: 1.75rem;
+    }
+    .tabs button {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: #64748b;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.6rem 0;
+      border-radius: 0.6rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .tabs button:hover { color: #cbd5e1; }
+    .tabs button.active {
+      background: #6366f1;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    /* ── Forms ── */
+    .form { display: none; }
+    .form.active { display: block; }
+
+    .form-group { margin-bottom: 1.25rem; }
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.02em;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 0.6rem;
+      color: #f1f5f9;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .form-group input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+    .form-group input::placeholder { color: #475569; }
+
+    /* ── Button ── */
+    .btn-primary {
+      width: 100%;
+      padding: 0.75rem;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border: none;
+      border-radius: 0.6rem;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(99, 102, 241, 0.4);
+    }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ── Messages ── */
+    .message {
+      margin-top: 1rem;
+      padding: 0.6rem 0.9rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      display: none;
+      text-align: center;
+    }
+    .message.error {
+      display: block;
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+    .message.success {
+      display: block;
+      background: rgba(34, 197, 94, 0.15);
+      color: #86efac;
+      border: 1px solid rgba(34, 197, 94, 0.25);
+    }
+
+    /* ── Dashboard (logged in) ── */
+    .dashboard { display: none; }
+    .dashboard.active { display: block; }
+    .dashboard .user-info {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .dashboard .user-info p {
+      color: #94a3b8;
+      font-size: 0.85rem;
+      margin-bottom: 0.35rem;
+    }
+    .dashboard .user-info p span {
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+    .dashboard .token-box {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      margin-bottom: 1.25rem;
+      word-break: break-all;
+    }
+    .dashboard .token-box label {
+      display: block;
+      font-size: 0.75rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+    }
+    .dashboard .token-box code {
+      font-size: 0.7rem;
+      color: #a5b4fc;
+      line-height: 1.4;
+    }
+    .btn-logout {
+      width: 100%;
+      padding: 0.7rem;
+      background: transparent;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      border-radius: 0.6rem;
+      color: #fca5a5;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-logout:hover {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.6);
+    }
+
+    /* ── Spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 0.35rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+      .card { padding: 1.75rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card" id="app">
+  <!-- ─── Auth Forms ─── -->
+  <div id="authContainer">
+    <div class="header">
+      <div class="logo">📊</div>
+      <h1>Excel Project</h1>
+      <p>Sign in to your workspace</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="active" data-tab="login">Login</button>
+      <button data-tab="register">Sign Up</button>
+    </div>
+
+    <!-- Login Form -->
+    <form class="form active" id="loginForm">
+      <div class="form-group">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com" required autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password" />
+      </div>
+      <button type="submit" class="btn-primary" id="loginBtn">Login</button>
+      <div class="message" id="loginMessage"></div>
+    </form>
+
+    <!-- Register Form -->
+    <form class="form" id="registerForm">
+      <div class="form-group">
+        <label for="regUsername">Username</label>
+        <input type="text" id="regUsername" placeholder="Choose a username" required autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label for="regEmail">Email</label>
+        <input type="email" id="regEmail" placeholder="you@example.com" required autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label for="regPassword">Password</label>
+        <input type="password" id="regPassword" placeholder="Create a password (min 6 chars)" required autocomplete="new-password" />
+      </div>
+      <button type="submit" class="btn-primary" id="registerBtn">Create Account</button>
+      <div class="message" id="registerMessage"></div>
+    </form>
+  </div>
+
+  <!-- ─── Dashboard ─── -->
+  <div class="dashboard" id="dashboard">
+    <div class="header">
+      <div class="logo">📊</div>
+      <h1>Dashboard</h1>
+      <p>You're signed in</p>
+    </div>
+    <div class="user-info">
+      <p>User ID: <span id="dashUserId">—</span></p>
+      <p>Username: <span id="dashUsername">—</span></p>
+    </div>
+    <div class="token-box">
+      <label>Access Token (saved in localStorage)</label>
+      <code id="dashToken">—</code>
+    </div>
+    <button class="btn-logout" id="logoutBtn">Sign Out</button>
+  </div>
+</div>
+
+<script>
+  // ─── API Base ───
+  const API_BASE = window.location.origin;
+
+  // ─── DOM Refs ───
+  const authContainer = document.getElementById('authContainer');
+  const dashboardEl   = document.getElementById('dashboard');
+
+  const tabs          = document.querySelectorAll('[data-tab]');
+  const loginForm     = document.getElementById('loginForm');
+  const registerForm  = document.getElementById('registerForm');
+  const loginBtn      = document.getElementById('loginBtn');
+  const registerBtn   = document.getElementById('registerBtn');
+  const loginMsg      = document.getElementById('loginMessage');
+  const registerMsg   = document.getElementById('registerMessage');
+  const logoutBtn     = document.getElementById('logoutBtn');
+
+  const dashUserId   = document.getElementById('dashUserId');
+  const dashUsername = document.getElementById('dashUsername');
+  const dashToken    = document.getElementById('dashToken');
+
+  // ─── Tab Switching ───
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabs.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+      document.getElementById(btn.dataset.tab + 'Form').classList.add('active');
+      // Clear messages
+      loginMsg.className = 'message'; loginMsg.textContent = '';
+      registerMsg.className = 'message'; registerMsg.textContent = '';
+    });
+  });
+
+  // ─── Toast-style message ───
+  function showMessage(el, text, type = 'error') {
+    el.className = `message ${type}`;
+    el.textContent = text;
+  }
+
+  // ─── Set loading state ───
+  function setLoading(btn, loading) {
+    if (loading) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Please wait…';
+    } else {
+      btn.disabled = false;
+      btn.textContent = btn.id === 'loginBtn' ? 'Login' : 'Create Account';
+    }
+  }
+
+  // ─── API call helper ───
+  async function apiCall(endpoint, body) {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Something went wrong');
+    return data;
+  }
+
+  // ─── Login ───
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    showMessage(loginMsg, '', '');
+    setLoading(loginBtn, true);
+
+    try {
+      const data = await apiCall('/auth/login', {
+        email: document.getElementById('loginEmail').value.trim(),
+        password: document.getElementById('loginPassword').value,
+      });
+      localStorage.setItem('access_token', data.access_token);
+      showMessage(loginMsg, 'Login successful!', 'success');
+      setTimeout(initDashboard, 500);
+    } catch (err) {
+      showMessage(loginMsg, err.message);
+    } finally {
+      setLoading(loginBtn, false);
+    }
+  });
+
+  // ─── Register ───
+  registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    showMessage(registerMsg, '', '');
+    setLoading(registerBtn, true);
+
+    try {
+      const data = await apiCall('/auth/register', {
+        username: document.getElementById('regUsername').value.trim(),
+        email: document.getElementById('regEmail').value.trim(),
+        password: document.getElementById('regPassword').value,
+      });
+      showMessage(registerMsg, `Account created for ${data.username}! You can now log in.`, 'success');
+      // Clear fields
+      document.getElementById('regUsername').value = '';
+      document.getElementById('regEmail').value = '';
+      document.getElementById('regPassword').value = '';
+      // Switch to login tab
+      tabs.forEach(b => b.classList.remove('active'));
+      document.querySelector('[data-tab="login"]').classList.add('active');
+      document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+      document.getElementById('loginForm').classList.add('active');
+      document.getElementById('loginEmail').value = data.email;
+    } catch (err) {
+      showMessage(registerMsg, err.message);
+    } finally {
+      setLoading(registerBtn, false);
+    }
+  });
+
+  // ─── Logout ───
+  logoutBtn.addEventListener('click', () => {
+    localStorage.removeItem('access_token');
+    authContainer.style.display = 'block';
+    dashboardEl.classList.remove('active');
+    loginForm.reset();
+    registerForm.reset();
+    showMessage(loginMsg, '', '');
+    showMessage(registerMsg, '', '');
+  });
+
+  // ─── Show / Hide forms ───
+  function initDashboard() {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      authContainer.style.display = 'block';
+      dashboardEl.classList.remove('active');
+      return;
+    }
+    // Decode JWT payload (simple parse)
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      dashUserId.textContent   = payload.sub || '—';
+      dashUsername.textContent = payload.username || '—';
+    } catch {
+      dashUserId.textContent   = '—';
+      dashUsername.textContent = '—';
+    }
+    dashToken.textContent = token;
+    authContainer.style.display = 'none';
+    dashboardEl.classList.add('active');
+  }
+
+  // ─── Boot ───
+  initDashboard();
+</script>
+
+</body>
+</html>
